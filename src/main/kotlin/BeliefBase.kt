@@ -129,7 +129,7 @@ class BeliefBase {
     //There is no reason to ever remove a belief unless we find its direct contradiction, since redundant information
     //may be un-redundated when presented with new info
     private val beliefs: MutableSet<Belief> = mutableSetOf() //Only holds base beliefs. None of these have parents
-
+    private val entails: MutableSet<Belief> = mutableSetOf()
     /**
      * Checks whether two beliefs contradict eachother
      */
@@ -167,12 +167,17 @@ class BeliefBase {
             if (printedBeliefs[belief] != true) println(belief.CNFString)
             printedBeliefs[belief] = true
         }
-        println("Entailments of these are:")
+        println("Antons entailments of these are:")
         for (belief in beliefs) {
             for (child in belief.entailments) {
                 if (printedBeliefs[child] != true) println(child.CNFString)
                 printedBeliefs[child] = true
             }
+        }
+
+        println("Lucas entailments:")
+        for (belief in entails) {
+            println(belief.CNFString)
         }
     }
 
@@ -198,9 +203,9 @@ class BeliefBase {
      * If we know that (A||B) and !A, then B is a child of both (A||B) and !A
      * My intuition is to clear every entailment and start over, but we can discuss this.
      */
-    private fun redoEntailments() {
+    private fun redoEntailments():Boolean {
         clearAllEntailments()
-        revise()
+        return revise()
     }
 
     private fun determineEntailments() {
@@ -226,10 +231,12 @@ class BeliefBase {
             }
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
         }
-        //redoEntailments()
+        while()
+        redoEntailments()
         //println("justAnotherCoolFunction changed something?: " + justAnotherCoolFunction(newBelief))
         //print("justAnotherCoolFunction says: " + justAnotherCoolFunction(newBelief))
-        println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
+        //println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
+        //justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction()
         printBeliefs()
     }
 
@@ -366,7 +373,7 @@ class BeliefBase {
     }
 
 
-    fun revise() {
+    fun revise(): Boolean {
         val allLiterals: MutableList<Literal> = mutableListOf()
         for (belief in beliefs) {
             for (disjunction in belief.CNF.disjunctions) {
@@ -394,40 +401,50 @@ class BeliefBase {
 
                     var stringPartOne = ""
                     for (literal in allLiterals[i].parent.variables){
-                        if(literal)
-                        stringPartOne = stringPartOne + literal.literalString
+                        if(literal != allLiterals[i]){
+                            stringPartOne = cropString(stringPartOne + "|" +  literal.literalString)
+                        }
                     }
+                    println("Stringpartone:" + stringPartOne)
+                    /*
                     val stringPartOne =cropString2(
                         allLiterals[i].parent.disjunctionString.replace(
                             allLiterals[i].literalString,
                             ""
                         )
                     )
+                     */
 
-
+                    var stringPartTwo = ""
+                    for (literal in allLiterals[j].parent.variables){
+                        if(literal != allLiterals[j]){
+                            stringPartTwo = cropString(stringPartTwo + "|" + literal.literalString)
+                        }
+                    }
+                    println("Stringparttwo" + stringPartTwo)
+                    /*
                     val stringPartTwo = cropString2(
                         allLiterals[j].parent.disjunctionString.replace(
                             allLiterals[j].literalString,
                             ""
                         )
                     )
+
+                     */
                     var newString = cropString(
                         "(" + stringPartOne + ")" + "|" + "(" + stringPartTwo + ")"
                     )
 
-
-
                     println("newstring is:" + newString)
                     val newBelief = Belief(newString)
 
-
                     allLiterals[i].parent.parent!!.parent.entailments.add(newBelief)
                     allLiterals[j].parent.parent!!.parent.entailments.add(newBelief)
-
-
+                    return true
                 }
             }
         }
+        return false
     }
     /*
 
@@ -515,13 +532,11 @@ class BeliefBase {
 
                     if (variablesToRemove.isNotEmpty()) {
                         val newVariables = innerDisjunction.variables.filterNot { it in variablesToRemove }
-
                         if (newVariables.isNotEmpty()) {
                             val newDisjunctionString =
                                 "(${newVariables.map { literal -> literal.literalString }.joinToString("|") { it }})"
-
                             println("newstring is:" + newDisjunctionString)
-                            val newBelief: Belief = Belief(newDisjunctionString)
+                            var newDisjunction: Disjunction = Disjunction(newDisjunctionStriva//l newBelief: Belief = Belief(newDisjunctionString)
                             outerDisjunction.parent!!.parent.entailments.add(newBelief)
                             //innerDisjunction.parent!!.parent.entailments.add(Belief(newString))
                             anythingChanged = true
@@ -530,34 +545,62 @@ class BeliefBase {
                 }
             }
         }
-        for (belief in beliefs) {
+        /*for (belief in beliefs) {
             justAnotherAnotherOtherOtherOtherCoolFunction(belief)
-        }
+        }*/
         return anythingChanged
     }
 
     private fun justAnotherAnotherOtherOtherOtherCoolFunction(newEntailment: Belief): Boolean {
         var anythingChanged = false
-        for (outerDisjunction in newEntailment.CNF.disjunctions) {
-            for (belief in beliefs.flatMap { it.entailments }) {
-                for (innerDisjunction in belief.entailments.flatMap { it.CNF.disjunctions }) {
-                    val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
-                        outerDisjunction.variables.any { outerVariable ->
-                            innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
+        for (outerBelief in beliefs.flatMap { it.entailments }) {
+            for (outerDisjunction in outerBelief.entailments.flatMap { entailment -> entailment.CNF.disjunctions }) {
+                for (belief in beliefs.flatMap { it.entailments }) {
+                    for (innerDisjunction in belief.CNF.disjunctions) {
+                        val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
+                            outerDisjunction.variables.any { outerVariable ->
+                                innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
+                            }
                         }
-                    }
-                    if (variablesToRemove.isNotEmpty()) {
-                        innerDisjunction.variables.removeAll(variablesToRemove)
-                        if (innerDisjunction.variables.isEmpty()) {
-                            belief.CNF.disjunctions.remove(innerDisjunction)
+                        if (variablesToRemove.isNotEmpty()) {
+                            innerDisjunction.variables.removeAll(variablesToRemove)
+                            if (innerDisjunction.variables.isEmpty()) {
+                                belief.CNF.disjunctions.remove(innerDisjunction)
+                            }
+                            anythingChanged = true
                         }
-                        anythingChanged = true
                     }
                 }
             }
         }
         return anythingChanged
     }
+
+    fun justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction(): Boolean {
+        var anythingChanged = false
+        for (outerBelieve in entails) {
+            for (outerDisjunction in outerBelieve.CNF.disjunctions) {
+                for (belief in entails) {
+                    for (innerDisjunction in belief.CNF.disjunctions) {
+                        val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
+                            outerDisjunction.variables.any { outerVariable ->
+                                innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
+                            }
+                        }
+                        if (variablesToRemove.isNotEmpty()) {
+                            innerDisjunction.variables.removeAll(variablesToRemove)
+                            if (innerDisjunction.variables.isEmpty()) {
+                                belief.CNF.disjunctions.remove(innerDisjunction)
+                            }
+                            anythingChanged = true
+                        }
+                    }
+                }
+            }
+        }
+        return anythingChanged
+    }
+
 }
 
 
@@ -571,7 +614,8 @@ class BeliefBase {
 // funktionen returnerer at der er lavet en ændring.
 
 
-private fun cropString(input: String): String {
+private fun cropString(inputt: String): String {
+    var input = " " + inputt
     // Regex to find the index of the first and last letter.
     val firstLetterIndex = input.indexOfFirst { it.isLetter() }
     val lastLetterIndex = input.indexOfLast { it.isLetter() }
@@ -581,14 +625,11 @@ private fun cropString(input: String): String {
         return ""
     }
 
-    // Crop the string from first to last letter index.
-    val cropped = input.substring(firstLetterIndex, lastLetterIndex + 1)
-
-    // Remove '&' or '|' before the first letter and after the last letter within the cropped section.
-    return cropped.filterIndexed { index, c ->
-        (c != '&' && c != '|') ||
-                (index > firstLetterIndex && index < lastLetterIndex)
+    input = input.substring(firstLetterIndex-1,lastLetterIndex+1)
+    if (input[0] == '~'){
+        return input
     }
+    return input.substring(1)
 }
 
 private fun cropString2(inputt: String): String {
@@ -600,7 +641,7 @@ private fun cropString2(inputt: String): String {
     while(input.indexOfFirst { it.isLetter() } > input.indexOf('|') && input.indexOfFirst { it.isLetter() } > input.indexOf('&')){
         input = input.drop(1)
     }
-    while(input.indexOfLast { it.isLetter() } < input.lastIndexOf('|') && input.indexOfFirst { it.isLetter() } < input.lastIndexOf('&')){
+    while(input.indexOfLast { it.isLetter() } < input.lastIndexOf('|') && input.indexOfLast { it.isLetter() } < input.lastIndexOf('&')){
         input = input.drop(1)
     }
     return input
