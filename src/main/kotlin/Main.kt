@@ -54,5 +54,6 @@ fun giveBelief(input: String, beliefBase: BeliefBase){
         println("Your input is a contradiction, and is therefore ignored")
         return
     }
+
     beliefBase.giveBeliefString(formula.toString())
 }

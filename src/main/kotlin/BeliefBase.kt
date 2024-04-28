@@ -1,25 +1,28 @@
 public val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
-public class Disjunction(val disjunctionString: String, parentCNF: CNF){
+
+public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
     val parent = parentCNF
     val variables: MutableList<Literal> = mutableListOf()
-    init{
-        for (literalString in disjunctionString.split('|')){
+
+    init {
+        for (literalString in disjunctionString.split('|')) {
             //println(literalString)
             //println("or")
             variables.add(Literal(literalString, this))
         }
     }
-    fun evaluate(map: Map<String, Boolean?>): Boolean?{
+
+    fun evaluate(map: Map<String, Boolean?>): Boolean? {
         var falseVariableCounter = 0
-        for (variable in variables){
+        for (variable in variables) {
             //return variable.evaluate(map)
-            if (variable.evaluate(map) == true){
+            if (variable.evaluate(map) == true) {
                 return true
-            } else if (variable.evaluate(map) == false){
+            } else if (variable.evaluate(map) == false) {
                 falseVariableCounter++
             }
         }
-        if (falseVariableCounter == variables.size){
+        if (falseVariableCounter == variables.size) {
             return false
         }
         return null
@@ -32,24 +35,25 @@ public class Disjunction(val disjunctionString: String, parentCNF: CNF){
 public class CNF(var CNFString: String, parentBelief: Belief) {
     val parent = parentBelief
     val disjunctions: MutableList<Disjunction> = mutableListOf()
-    init{
-        try{
+
+    init {
+        try {
 
             val stringList = CNFString.split('&')
-            for(disjunctionString in stringList){
+            for (disjunctionString in stringList) {
                 disjunctions.add(Disjunction(disjunctionString, this))
             }
-        } catch (e: KotlinNullPointerException){
+        } catch (e: KotlinNullPointerException) {
             println("Invalid input")
         }
     }
 
 
     fun evaluate(map: Map<String, Boolean?>): Boolean? {
-        for (disjunction in disjunctions){
+        for (disjunction in disjunctions) {
             val result = disjunction.evaluate(map)
             if (result == null) return null
-            if (!disjunction.evaluate(map)!!){
+            if (!disjunction.evaluate(map)!!) {
                 return false
             }
         }
@@ -57,24 +61,24 @@ public class CNF(var CNFString: String, parentBelief: Belief) {
     }
 }
 
-public class Literal(val literalString: String, parentDisjunction: Disjunction){
+public class Literal(val literalString: String, parentDisjunction: Disjunction) {
     val parent = parentDisjunction
     var varName: String = ""
     var isNot: Boolean = false
 
-    init{
-        if(literalString.contains('~')){
+    init {
+        if (literalString.contains('~')) {
             isNot = true
         }
         val regex = "[a-zA-Z]+".toRegex()
-        varName = regex.find(literalString,0)!!.value
+        varName = regex.find(literalString, 0)!!.value
     }
 
-    fun evaluate(map: Map<String, Boolean?>): Boolean?{
-        if (map[varName] == null){
+    fun evaluate(map: Map<String, Boolean?>): Boolean? {
+        if (map[varName] == null) {
             return null
         }
-        if (isNot){
+        if (isNot) {
             return !map[varName]!!
         }
         return map[varName]!!
@@ -84,10 +88,11 @@ public class Literal(val literalString: String, parentDisjunction: Disjunction){
 /**
  * This function is basically confirmation basis, algorithmically
  */
-public fun getWorth(belief:Belief): Int{
+public fun getWorth(belief: Belief): Int {
     //TODO: We should ideally determine this based on number of entailments, but this works for now
     return belief.addedNumber
 }
+
 /**
  * Decides on which belief to remove.
  */
@@ -107,11 +112,13 @@ public class Belief(originalExpression: String) {
 
     val parents: MutableList<Belief> = mutableListOf() //The corresponding parents. Not sure if we want this
 }
+
 /**
  * The big boy
  */
 class BeliefBase {
-    private var numberOfBeliefs: Int = 0 //Keeps track of total number of beliefs that have been added. Works as a "timestamp"
+    private var numberOfBeliefs: Int =
+        0 //Keeps track of total number of beliefs that have been added. Works as a "timestamp"
 
     //I think every base belief should be added to this, but not entailments. E.G if we know that (A||B) and !B,
     //then (A||B), !B are added, but A is added as a child of (A||B) AND !B. Then, if we later get told that B,
@@ -126,18 +133,18 @@ class BeliefBase {
     /**
      * Checks whether two beliefs contradict eachother
      */
-    private fun contradicts(belief1: Belief): Boolean{
+    private fun contradicts(belief1: Belief): Boolean {
         //https://sat.inesc-id.pt/~ines/cp07.pdf This for some advanced shit.
         // Maybe we should just iterate over every combination first
         return TODO()
     }
 
-    private fun selectAndRemoveBelief(contradictingBeliefs: Set<Belief>, holyBelief: Belief){
+    private fun selectAndRemoveBelief(contradictingBeliefs: Set<Belief>, holyBelief: Belief) {
 
         //TODO The following is based on number of entailments/children.
         // We could, alternatively, just order them based on addedNumber if this is impractical
 
-        if(contradictingBeliefs.size==1 && contradictingBeliefs.first() == holyBelief){
+        if (contradictingBeliefs.size == 1 && contradictingBeliefs.first() == holyBelief) {
             println("Your belief is an oxymoron (Contradiction). It will not be added to the belief base")
             beliefs.remove(holyBelief)
             return
@@ -148,16 +155,23 @@ class BeliefBase {
             beliefsToNumbers.put(key = belief, value = getWorth(belief))
         }
         beliefsToNumbers.remove(holyBelief) //We remove the holy belief, because we don't want it removed from the set of all beliefs
-        beliefs.remove(beliefsToNumbers.minBy{ it.value }.key) //Lowest val
+        beliefs.remove(beliefsToNumbers.minBy { it.value }.key) //Lowest val
     }
 
-    fun printBeliefs(){
+    private fun printBeliefs() {
+
         println("Current base beliefs are:")
-        for (belief in beliefs){
+        for (belief in beliefs) {
             println(belief.CNFString)
+            //printedBeliefs[belief.CNFString] = true
         }
         println("Entailments of these are:")
-        println("TODO") //TODO: Fix this
+        for (belief in beliefs) {
+            for (child in belief.entailments) {
+                println(child.CNFString)
+                //printedBeliefs[child.CNFString] = true
+            }
+        }
     }
 
     private fun addBelief(beliefToAdd: Belief) {
@@ -167,11 +181,11 @@ class BeliefBase {
         //redoEntailments()
     }
 
-    private fun clearAllEntailments(){
+    private fun clearAllEntailments() {
         //Hugely inefficient, but I don't see the issue. Simpler than going through every child and determining if it's still true
-        for (belief in beliefs){
+        for (belief in beliefs) {
             belief.entailments.clear()
-            if (belief.parents.isNotEmpty()){
+            if (belief.parents.isNotEmpty()) {
                 throw Exception("Base belief had parent")
             }
         }
@@ -182,12 +196,12 @@ class BeliefBase {
      * If we know that (A||B) and !A, then B is a child of both (A||B) and !A
      * My intuition is to clear every entailment and start over, but we can discuss this.
      */
-    private fun redoEntailments(){
+    private fun redoEntailments() {
         clearAllEntailments()
-        determineEntailments()
+        revise()
     }
 
-    private fun determineEntailments(){
+    private fun determineEntailments() {
 
 
         TODO() //This is where all the actual hard code goes
@@ -196,21 +210,25 @@ class BeliefBase {
     /**
      * The "main" method for adding a belief
      */
-    public fun giveBeliefString(newBeliefString: String){
+    public fun giveBeliefString(newBeliefString: String) {
         giveBelief(Belief(newBeliefString))
     }
+
     private fun giveBelief(newBelief: Belief) {
         addBelief(newBelief)
 
-        printBeliefs()
-        while(!DPLL_satisfiable()) {
+        while (!DPLL_satisfiable()) {
             println("Model is not satisfiable. Following beliefs are causing inconsistency, and one will be removed:")
             for (belief in inconsistentBeliefs) {
                 println("\t" + belief.CNFString)
             }
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
-            printBeliefs()
         }
+        redoEntailments()
+        //println("justAnotherCoolFunction changed something?: " + justAnotherCoolFunction(newBelief))
+        //print("justAnotherCoolFunction says: " + justAnotherCoolFunction(newBelief))
+        //println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
+        printBeliefs()
     }
 
     private fun allClausesTrue(clauses: Set<Disjunction>, model: Map<String, Boolean?>): Boolean {
@@ -227,25 +245,25 @@ class BeliefBase {
         //k is set to true when it shouldnt for AND(OR('d',OR('a',IMP(OR('g',IMP(NOT('h'),'g')),OR('g')),IMP(IFF('a','d'),IFF('g','h'))),OR('e','k','g'),'g'),OR('a',AND(IFF('c','c'),'k','b',AND('d',NOT(NOT(NOT('d'))))),IMP('h',OR('k',NOT('c')))),NOT('k'))
         for (clause in clauses) {
             if (clause.evaluate(model) == false) {
-                inconsistentBeliefs.add(clause.parent.parent)
+                inconsistentBeliefs.add(clause.parent!!.parent)
                 return true
             }
         }
         return false
     }
 
-    private fun DPLL_satisfiable(): Boolean{
+    private fun DPLL_satisfiable(): Boolean {
         val clauses: MutableSet<Disjunction> = mutableSetOf<Disjunction>()
         val literals: MutableSet<Literal> = mutableSetOf<Literal>()
         val model: MutableMap<String, Boolean?> = mutableMapOf()
 
-        for (belief in beliefs){
+        for (belief in beliefs) {
             clauses.addAll(belief.CNF.disjunctions)
         }
 
-        for(belief in beliefs){
-            for (disjunc in belief.CNF.disjunctions){
-                for(literal in disjunc.variables){
+        for (belief in beliefs) {
+            for (disjunc in belief.CNF.disjunctions) {
+                for (literal in disjunc.variables) {
                     literals.add(literal)
                 }
             }
@@ -255,16 +273,20 @@ class BeliefBase {
         return DPLL(clauses, literals, model)
     }
 
-    private fun DPLL(clauses: Set<Disjunction>, symbols: MutableSet<Literal>, model: MutableMap<String, Boolean?>): Boolean {
+    private fun DPLL(
+        clauses: Set<Disjunction>,
+        symbols: MutableSet<Literal>,
+        model: MutableMap<String, Boolean?>
+    ): Boolean {
         //println("Testing with model " + model)
         //If every clause in clauses is true in model then return true
 
-        if(allClausesTrue(clauses, model)){
+        if (allClausesTrue(clauses, model)) {
             return true
         }
 
         //If some clause in clauses is false in model then return false
-        if (someClauseFalse(clauses, model)){
+        if (someClauseFalse(clauses, model)) {
             return false
         }
 
@@ -272,22 +294,22 @@ class BeliefBase {
         //P, value = FINDPURESYMBOL(symbol, clauses, model)
 
         var pureLiteral: Literal? = null
-        for(literal in symbols) {
+        for (literal in symbols) {
             var pure: Boolean = true
             var symbolsOfLiteral: List<Literal> =
-                symbols.filter { sym -> sym.varName == literal.varName}
+                symbols.filter { sym -> sym.varName == literal.varName }
             for (innerLiteral in symbolsOfLiteral) {
                 if (innerLiteral.isNot != literal.isNot) {
                     pure = false
                     break
                 }
             }
-            if(pure) {
+            if (pure) {
                 pureLiteral = literal
             }
         } //Doesn't cause an issue with AND(OR('d',OR('a',IMP(OR('g',IMP(NOT('h'),'g')),OR('g')),IMP(IFF('a','d'),IFF('g','h'))),OR('e','k','g'),'g'),OR('a',AND(IFF('c','c'),'k','b',AND('d',NOT(NOT(NOT('d'))))),IMP('h',OR('k',NOT('c')))),NOT('k'))
 
-        if (pureLiteral != null && model[pureLiteral.varName] == null){ //If P != null return DPLL(clauses, symbols - P, model where P = value)
+        if (pureLiteral != null && model[pureLiteral.varName] == null) { //If P != null return DPLL(clauses, symbols - P, model where P = value)
 
             //I think there is an issue here where k is set to false and then true for AND(IFF('k','b'),NOT('k'))
             model[pureLiteral.varName] = !pureLiteral.isNot
@@ -308,8 +330,7 @@ class BeliefBase {
                 if (status == null) {
                     undecidedCount += 1
                     secondP = variable
-                }
-                else if (status == true) {
+                } else if (status == true) {
                     allLiteralsFalse = false
                     break
                 }
@@ -342,42 +363,71 @@ class BeliefBase {
         return DPLL(clauses, symbols, modelWherePTrue) || DPLL(clauses, symbols, modelWherePFalse)
     }
 
-    
 
     fun revise() {
-        for (belief in beliefs){
-            for (disjunction in belief.CNF.disjunctions){
-                for (literal in disjunction.variables){
-
-                }
+        val allLiterals: MutableList<Literal> = mutableListOf()
+        for (belief in beliefs) {
+            for (disjunction in belief.CNF.disjunctions) {
+                allLiterals.addAll(disjunction.variables)
             }
         }
 
+        for (i in 0 until allLiterals.size - 1) {
+            for (j in i + 1 until allLiterals.size) {
+                if (allLiterals.get(i).isNot != allLiterals.get(j).isNot && allLiterals.get(i).varName == allLiterals.get(j).varName) {
+                    //We do the wildest rawdogging of these strings
+                    var newString = cropString(
+                        "(" + allLiterals[i].parent.disjunctionString.replace(
+                            allLiterals[i].literalString,
+                            ""
+                        ) + ")" + "|" + "(" + allLiterals[j].parent.disjunctionString.replace(
+                            allLiterals[j].literalString,
+                            ""
+                        ) + ")"
+                    )
 
-
-        for (outerbelief in beliefs) {
-            for (innerbelief in beliefs) {
-                if (innerbelief != outerbelief) {
-                    for (outerDisjunc in outerbelief.CNF.disjunctions){
-                        for (innerDisjunc in innerbelief.CNF.disjunctions){
-
-
-                        }
-                    }
+                    println("newstring is:" + newString)
+                    val newBelief = Belief(newString)
+                    allLiterals[i].parent.parent!!.parent.entailments.add(newBelief)
+                    allLiterals[j].parent.parent!!.parent.entailments.add(newBelief)
                 }
             }
+        }
+        /*
+
+        for (outerLiteral in allLiterals) {
+            for (innerLiteral in allLiterals) {
+                if (outerLiteral.isNot != innerLiteral.isNot && outerLiteral.varName == innerLiteral.varName) {
+                    //We do the wildest rawdogging of these strings
+                    var newString = cropString(
+                        "(" + outerLiteral.parent.disjunctionString.replace(
+                            outerLiteral.literalString,
+                            ""
+                        ) + ")" + "|" + "(" + innerLiteral.parent.disjunctionString.replace(
+                            innerLiteral.literalString,
+                            ""
+                        ) + ")"
+                    )
+
+                    println("newstring is:" + newString)
+
+                    outerLiteral.parent.parent!!.parent.entailments.add(Belief(newString))
+                }
+            }
+
+         */
         }
     }
 
 
     // negate belief
-    // loop through all disjunctions in the negated belief
+    // loop through all disjunctions in the new belief
     // then do an inner loop for all disjunctions in current belief base
 
-    // if a variable name in the disjunction (from the negated belief) is
+    // if a variable name in the disjunction (from the new belief) is
     // present in a disjunction (from the current belief base), then smack it down
-    // to one clause, by removing the variable from the clause, and exchange it,
-    // for the other variable in the disjunction (from the negated belief)
+    // to one clause, by removing the variable from the clause, and exchange it
+    // for the other variable in the disjunction (from the new belief)
 
     // aka.
     // current negated disjunction in the outer loop is: (P V Q)
@@ -391,14 +441,103 @@ class BeliefBase {
     // by the belief base. although, it might still be true,
     // but we are uncertain if it is due to the belief base.
 
-    fun justAnotherCoolFunction(newBelief: Belief) {
-        currentBeliefBase: MutableSet<Belief> = beliefs
-        for (disjunction in newBelief.CNF.disjunctions) {
-            for (variable in disjunction.variables) {
-                variable.isNot = variable.isNot.not()
+    fun justAnotherCoolFunction(newBelief: Belief): Boolean {
+        var anythingChanged = false
+        for (outerDisjunction in newBelief.CNF.disjunctions) {
+            outerDisjunction.variables
+            for (belief in beliefs) {
+                for (innerDisjunction in belief.CNF.disjunctions) {
+                    val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
+                        outerDisjunction.variables.any { outerVariable ->
+                            innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
+                        }
+                    }
+                    if (variablesToRemove.isNotEmpty()) {
+                        innerDisjunction.variables.removeAll(variablesToRemove)
+                        if (innerDisjunction.variables.isEmpty()) {
+                            belief.CNF.disjunctions.remove(innerDisjunction)
+                        }
+                        anythingChanged = true
+                    }
+                }
             }
-
         }
+        return anythingChanged
     }
 
+    fun justAnotherAnotherOtherCoolFunction(newBelief: Belief): Boolean {
+        var anythingChanged = false
+        for (outerDisjunction in newBelief.CNF.disjunctions) {
+            for (belief in beliefs) {
+                for (innerDisjunction in belief.CNF.disjunctions) {
+                    val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
+                        outerDisjunction.variables.any { outerVariable ->
+                            innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
+                        }
+                    }
+                    if (variablesToRemove.isNotEmpty()) {
+                        val newVariables = innerDisjunction.variables.filterNot { it in variablesToRemove
+
+                        if (newVariables.isNotEmpty()) {
+
+                            // newVariables holder på f.eks. P og P skal (fjernes) fra innerDist, og outer
+                            // lav en ny believe op newVariables.
+
+                            val newString = "(" + 
+
+                            val newString = cropString(
+                                "(" + outerDisjunction.disjunctionString.replace(
+                                    variablesToRemove[0].literalString,
+                                    ""
+                                ) + ")" + "|" + "(" + innerDisjunction.disjunctionString.replace(
+                                    variablesToRemove[0].literalString,
+                                    ""
+                                ) + ")"
+                            )
+
+                            println("newstring is:" + newString)
+
+                            outerDisjunction.parent!!.parent.entailments.add(Belief(newString))
+                            //innerDisjunction.parent!!.parent.entailments.add(Belief(newString))
+                            anythingChanged = true
+                        }
+                    }
+                }
+            }
+        }
+        return anythingChanged
+    }
+
+
+
+
+    // ------------------
+    // I belief base er der
+    // A | B
+
+    // ny belief siger notB
+    // Så, B og notB går ud, og kun A står tilbage
+    // funktionen returnerer at der er lavet en ændring.
+
+
+}
+
+private fun cropString(input: String): String {
+    // Regex to find the index of the first and last letter.
+    val firstLetterIndex = input.indexOfFirst { it.isLetter() }
+    val lastLetterIndex = input.indexOfLast { it.isLetter() }
+
+    if (firstLetterIndex == -1 || lastLetterIndex == -1) {
+        // No letters found, return an empty string or the original string based on requirement.
+        return ""
+    }
+
+    // Crop the string from first to last letter index.
+    val cropped = input.substring(firstLetterIndex, lastLetterIndex + 1)
+
+    // Remove '&' or '|' before the first letter and after the last letter within the cropped section.
+    return cropped.filterIndexed { index, c ->
+        (c != '&' && c != '|') ||
+                (index > firstLetterIndex && index < lastLetterIndex)
+    }
 }
