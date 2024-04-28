@@ -1,0 +1,3 @@
+fun DPLL(formula: String) {
+
+}
