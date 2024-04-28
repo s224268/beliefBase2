@@ -366,7 +366,7 @@ class BeliefBase {
 
     fun someOtherFunc(newBelief: Belief) {
         for (belief in beliefs) {
-            belief.CNF.
+            
         }
     }
 
