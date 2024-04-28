@@ -3,7 +3,7 @@ public class Disjunction(val disjunctionString: String, parentCNF: CNF){
     val parent = parentCNF
     val variables: MutableList<Literal> = mutableListOf()
     init{
-        for (literalString in disjunctionString.split('∨')){
+        for (literalString in disjunctionString.split('|')){
             //println(literalString)
             //println("or")
             variables.add(Literal(literalString, this))
@@ -34,12 +34,9 @@ public class CNF(var CNFString: String, parentBelief: Belief) {
     val disjunctions: MutableList<Disjunction> = mutableListOf()
     init{
         try{
-            CNFString = CNFString.replace("(","").replace(")","")
-            println(CNFString)
-            val stringList = CNFString.split('∧')
+
+            val stringList = CNFString.split('&')
             for(disjunctionString in stringList){
-                //println(disjunctionString)
-                //println("And")
                 disjunctions.add(Disjunction(disjunctionString, this))
             }
         } catch (e: KotlinNullPointerException){
@@ -66,12 +63,11 @@ public class Literal(val literalString: String, parentDisjunction: Disjunction){
     var isNot: Boolean = false
 
     init{
-        if(literalString.contains('¬')){
+        if(literalString.contains('~')){
             isNot = true
         }
         val regex = "[a-zA-Z]+".toRegex()
         varName = regex.find(literalString,0)!!.value
-
     }
 
     fun evaluate(map: Map<String, Boolean?>): Boolean?{
@@ -201,25 +197,19 @@ class BeliefBase {
      * The "main" method for adding a belief
      */
     public fun giveBeliefString(newBeliefString: String){
-        println("New belief is: " + newBeliefString)
         giveBelief(Belief(newBeliefString))
     }
     private fun giveBelief(newBelief: Belief) {
-        var inconsistent = false
         addBelief(newBelief)
         printBeliefs()
-        do {
-            if (!DPLL_satisfiable(newBelief)){
-                inconsistent = true
-                println("Model is not satisfiable. Following beliefs are causing inconsistency, and one will be removed:")
-                for(belief in inconsistentBeliefs){
-                    println(belief.CNFString)
-                }
-                selectAndRemoveBelief(inconsistentBeliefs, newBelief)
-                printBeliefs()
-            } else inconsistent = false
-
-        } while (inconsistent)
+        while(!DPLL_satisfiable()){
+            println("Model is not satisfiable. Following beliefs are causing inconsistency, and one will be removed:")
+            for(belief in inconsistentBeliefs){
+                println("\t"+ belief.CNFString)
+            }
+            selectAndRemoveBelief(inconsistentBeliefs, newBelief)
+            printBeliefs()
+        }
     }
     private fun allClausesTrue(clauses: Set<Disjunction>, model: Map<String, Boolean?>): Boolean {
         var truthCounter = 0
@@ -242,7 +232,7 @@ class BeliefBase {
         return false
     }
 
-    private fun DPLL_satisfiable(newBelief: Belief): Boolean{
+    private fun DPLL_satisfiable(): Boolean{
         val clauses: MutableSet<Disjunction> = mutableSetOf<Disjunction>()
         val literals: MutableSet<Literal> = mutableSetOf<Literal>()
         val model: MutableMap<String, Boolean?> = mutableMapOf()
@@ -264,7 +254,7 @@ class BeliefBase {
     }
 
     private fun DPLL(clauses: Set<Disjunction>, symbols: MutableSet<Literal>, model: MutableMap<String, Boolean?>): Boolean {
-        println("Testing with model " + model)
+        //println("Testing with model " + model)
         //If every clause in clauses is true in model then return true
 
         if(allClausesTrue(clauses, model)){
@@ -334,10 +324,14 @@ class BeliefBase {
         //P = FIRST(Symbols) [pick any?]
         //Rest = REST(symbols)
         var thirdP: Literal
+        thirdP = symbols.first()
+        symbols.remove(thirdP)
+        /*
         do{
             thirdP = symbols.first()
             symbols.remove(thirdP)
         }while(model[thirdP.varName] != null)
+        */
 
         val modelWherePTrue = model.toMutableMap()
         val modelWherePFalse = model.toMutableMap()
