@@ -160,16 +160,18 @@ class BeliefBase {
 
     private fun printBeliefs() {
 
+        val printedBeliefs: MutableMap<Belief, Boolean> = mutableMapOf()
+
         println("Current base beliefs are:")
         for (belief in beliefs) {
-            println(belief.CNFString)
-            //printedBeliefs[belief.CNFString] = true
+            if (printedBeliefs[belief] != true) println(belief.CNFString)
+            printedBeliefs[belief] = true
         }
         println("Entailments of these are:")
         for (belief in beliefs) {
             for (child in belief.entailments) {
-                println(child.CNFString)
-                //printedBeliefs[child.CNFString] = true
+                if (printedBeliefs[child] != true) println(child.CNFString)
+                printedBeliefs[child] = true
             }
         }
     }
@@ -224,10 +226,10 @@ class BeliefBase {
             }
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
         }
-        redoEntailments()
+        //redoEntailments()
         //println("justAnotherCoolFunction changed something?: " + justAnotherCoolFunction(newBelief))
         //print("justAnotherCoolFunction says: " + justAnotherCoolFunction(newBelief))
-        //println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
+        println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
         printBeliefs()
     }
 
@@ -371,53 +373,88 @@ class BeliefBase {
                 allLiterals.addAll(disjunction.variables)
             }
         }
+        val visitedBeliefs: MutableMap<Belief, Boolean> = mutableMapOf()
+        for (belief in beliefs) {
+            for (child in belief.entailments) {
+                if (visitedBeliefs[child] != true) {
+                    for (disjunction in child.CNF.disjunctions) {
+                        allLiterals.addAll(disjunction.variables)
+                    }
+                    visitedBeliefs[child] = true
+                }
+            }
+        }
 
         for (i in 0 until allLiterals.size - 1) {
             for (j in i + 1 until allLiterals.size) {
-                if (allLiterals.get(i).isNot != allLiterals.get(j).isNot && allLiterals.get(i).varName == allLiterals.get(j).varName) {
+                if (allLiterals.get(i).isNot != allLiterals.get(j).isNot &&
+                    allLiterals.get(i).varName == allLiterals.get(j).varName
+                ) {
                     //We do the wildest rawdogging of these strings
-                    var newString = cropString(
-                        "(" + allLiterals[i].parent.disjunctionString.replace(
+
+                    var stringPartOne = ""
+                    for (literal in allLiterals[i].parent.variables){
+                        if(literal)
+                        stringPartOne = stringPartOne + literal.literalString
+                    }
+                    val stringPartOne =cropString2(
+                        allLiterals[i].parent.disjunctionString.replace(
                             allLiterals[i].literalString,
                             ""
-                        ) + ")" + "|" + "(" + allLiterals[j].parent.disjunctionString.replace(
+                        )
+                    )
+
+
+                    val stringPartTwo = cropString2(
+                        allLiterals[j].parent.disjunctionString.replace(
                             allLiterals[j].literalString,
                             ""
-                        ) + ")"
+                        )
                     )
+                    var newString = cropString(
+                        "(" + stringPartOne + ")" + "|" + "(" + stringPartTwo + ")"
+                    )
+
+
 
                     println("newstring is:" + newString)
                     val newBelief = Belief(newString)
+
+
                     allLiterals[i].parent.parent!!.parent.entailments.add(newBelief)
                     allLiterals[j].parent.parent!!.parent.entailments.add(newBelief)
+
+
                 }
             }
-        }
-        /*
-
-        for (outerLiteral in allLiterals) {
-            for (innerLiteral in allLiterals) {
-                if (outerLiteral.isNot != innerLiteral.isNot && outerLiteral.varName == innerLiteral.varName) {
-                    //We do the wildest rawdogging of these strings
-                    var newString = cropString(
-                        "(" + outerLiteral.parent.disjunctionString.replace(
-                            outerLiteral.literalString,
-                            ""
-                        ) + ")" + "|" + "(" + innerLiteral.parent.disjunctionString.replace(
-                            innerLiteral.literalString,
-                            ""
-                        ) + ")"
-                    )
-
-                    println("newstring is:" + newString)
-
-                    outerLiteral.parent.parent!!.parent.entailments.add(Belief(newString))
-                }
-            }
-
-         */
         }
     }
+    /*
+
+    for (outerLiteral in allLiterals) {
+        for (innerLiteral in allLiterals) {
+            if (outerLiteral.isNot != innerLiteral.isNot && outerLiteral.varName == innerLiteral.varName) {
+                //We do the wildest rawdogging of these strings
+                var newString = cropString(
+                    "(" + outerLiteral.parent.disjunctionString.replace(
+                        outerLiteral.literalString,
+                        ""
+                    ) + ")" + "|" + "(" + innerLiteral.parent.disjunctionString.replace(
+                        innerLiteral.literalString,
+                        ""
+                    ) + ")"
+                )
+
+                println("newstring is:" + newString)
+
+                outerLiteral.parent.parent!!.parent.entailments.add(Belief(newString))
+            }
+        }
+
+
+    }
+}
+*/
 
 
     // negate belief
@@ -475,29 +512,17 @@ class BeliefBase {
                             innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
                         }
                     }
+
                     if (variablesToRemove.isNotEmpty()) {
-                        val newVariables = innerDisjunction.variables.filterNot { it in variablesToRemove
+                        val newVariables = innerDisjunction.variables.filterNot { it in variablesToRemove }
 
                         if (newVariables.isNotEmpty()) {
+                            val newDisjunctionString =
+                                "(${newVariables.map { literal -> literal.literalString }.joinToString("|") { it }})"
 
-                            // newVariables holder på f.eks. P og P skal (fjernes) fra innerDist, og outer
-                            // lav en ny believe op newVariables.
-
-                            val newString = "(" + 
-
-                            val newString = cropString(
-                                "(" + outerDisjunction.disjunctionString.replace(
-                                    variablesToRemove[0].literalString,
-                                    ""
-                                ) + ")" + "|" + "(" + innerDisjunction.disjunctionString.replace(
-                                    variablesToRemove[0].literalString,
-                                    ""
-                                ) + ")"
-                            )
-
-                            println("newstring is:" + newString)
-
-                            outerDisjunction.parent!!.parent.entailments.add(Belief(newString))
+                            println("newstring is:" + newDisjunctionString)
+                            val newBelief: Belief = Belief(newDisjunctionString)
+                            outerDisjunction.parent!!.parent.entailments.add(newBelief)
                             //innerDisjunction.parent!!.parent.entailments.add(Belief(newString))
                             anythingChanged = true
                         }
@@ -505,22 +530,46 @@ class BeliefBase {
                 }
             }
         }
+        for (belief in beliefs) {
+            justAnotherAnotherOtherOtherOtherCoolFunction(belief)
+        }
         return anythingChanged
     }
 
-
-
-
-    // ------------------
-    // I belief base er der
-    // A | B
-
-    // ny belief siger notB
-    // Så, B og notB går ud, og kun A står tilbage
-    // funktionen returnerer at der er lavet en ændring.
-
-
+    private fun justAnotherAnotherOtherOtherOtherCoolFunction(newEntailment: Belief): Boolean {
+        var anythingChanged = false
+        for (outerDisjunction in newEntailment.CNF.disjunctions) {
+            for (belief in beliefs.flatMap { it.entailments }) {
+                for (innerDisjunction in belief.entailments.flatMap { it.CNF.disjunctions }) {
+                    val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
+                        outerDisjunction.variables.any { outerVariable ->
+                            innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
+                        }
+                    }
+                    if (variablesToRemove.isNotEmpty()) {
+                        innerDisjunction.variables.removeAll(variablesToRemove)
+                        if (innerDisjunction.variables.isEmpty()) {
+                            belief.CNF.disjunctions.remove(innerDisjunction)
+                        }
+                        anythingChanged = true
+                    }
+                }
+            }
+        }
+        return anythingChanged
+    }
 }
+
+
+
+// ------------------
+// I belief base er der
+// A | B
+
+// ny belief siger notB
+// Så, B og notB går ud, og kun A står tilbage
+// funktionen returnerer at der er lavet en ændring.
+
 
 private fun cropString(input: String): String {
     // Regex to find the index of the first and last letter.
@@ -540,4 +589,19 @@ private fun cropString(input: String): String {
         (c != '&' && c != '|') ||
                 (index > firstLetterIndex && index < lastLetterIndex)
     }
+}
+
+private fun cropString2(inputt: String): String {
+    // Regex to find the index of the first and last letter.
+    var input = inputt
+    val firstLetterIndex = input.indexOfFirst { it.isLetter() }
+    val lastLetterIndex = input.indexOfLast { it.isLetter() }
+
+    while(input.indexOfFirst { it.isLetter() } > input.indexOf('|') && input.indexOfFirst { it.isLetter() } > input.indexOf('&')){
+        input = input.drop(1)
+    }
+    while(input.indexOfLast { it.isLetter() } < input.lastIndexOf('|') && input.indexOfFirst { it.isLetter() } < input.lastIndexOf('&')){
+        input = input.drop(1)
+    }
+    return input
 }
