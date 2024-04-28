@@ -189,7 +189,7 @@ class BeliefBase {
 
     private fun determineEntailments(){
 
-        
+
         TODO() //This is where all the actual hard code goes
     }
 
@@ -201,16 +201,18 @@ class BeliefBase {
     }
     private fun giveBelief(newBelief: Belief) {
         addBelief(newBelief)
+
         printBeliefs()
-        while(!DPLL_satisfiable()){
+        while(!DPLL_satisfiable()) {
             println("Model is not satisfiable. Following beliefs are causing inconsistency, and one will be removed:")
-            for(belief in inconsistentBeliefs){
-                println("\t"+ belief.CNFString)
+            for (belief in inconsistentBeliefs) {
+                println("\t" + belief.CNFString)
             }
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
             printBeliefs()
         }
     }
+
     private fun allClausesTrue(clauses: Set<Disjunction>, model: Map<String, Boolean?>): Boolean {
         var truthCounter = 0
         for (clause in clauses) {
@@ -340,7 +342,16 @@ class BeliefBase {
         return DPLL(clauses, symbols, modelWherePTrue) || DPLL(clauses, symbols, modelWherePFalse)
     }
 
+    
+
     fun revise() {
+        for (belief in beliefs){
+            for (disjunction in belief.CNF.disjunctions){
+                for (literal in disjunction.variables){
+
+                }
+            }
+        }
 
 
 
@@ -350,6 +361,7 @@ class BeliefBase {
                     for (outerDisjunc in outerbelief.CNF.disjunctions){
                         for (innerDisjunc in innerbelief.CNF.disjunctions){
 
+
                         }
                     }
                 }
@@ -358,15 +370,34 @@ class BeliefBase {
     }
 
 
+    // negate belief
+    // loop through all disjunctions in the negated belief
+    // then do an inner loop for all disjunctions in current belief base
 
+    // if a variable name in the disjunction (from the negated belief) is
+    // present in a disjunction (from the current belief base), then smack it down
+    // to one clause, by removing the variable from the clause, and exchange it,
+    // for the other variable in the disjunction (from the negated belief)
 
+    // aka.
+    // current negated disjunction in the outer loop is: (P V Q)
+    // current disjunction in the inner loop is: (-P V R)
+    // they together hold -P and P
+    // Remove (-P V R) from the belief base, and replace it with one clause
+    // that just contains the remains of the two clauses, aka. (Q V R)
+    // keep doing this.
+    // If any clause is at any time empty, there is a contradiction.
+    // // If we can not get an empty clause, then the new belief is not entailed
+    // by the belief base. although, it might still be true,
+    // but we are uncertain if it is due to the belief base.
 
+    fun justAnotherCoolFunction(newBelief: Belief) {
+        currentBeliefBase: MutableSet<Belief> = beliefs
+        for (disjunction in newBelief.CNF.disjunctions) {
+            for (variable in disjunction.variables) {
+                variable.isNot = variable.isNot.not()
+            }
 
-
-
-    fun someOtherFunc(newBelief: Belief) {
-        for (belief in beliefs) {
-            
         }
     }
 
