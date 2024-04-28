@@ -117,8 +117,7 @@ public class Belief(originalExpression: String) {
  * The big boy
  */
 class BeliefBase {
-    private var numberOfBeliefs: Int =
-        0 //Keeps track of total number of beliefs that have been added. Works as a "timestamp"
+    private var numberOfBeliefs: Int = 0 //Keeps track of total number of beliefs that have been added. Works as a "timestamp"
 
     //I think every base belief should be added to this, but not entailments. E.G if we know that (A||B) and !B,
     //then (A||B), !B are added, but A is added as a child of (A||B) AND !B. Then, if we later get told that B,
@@ -130,6 +129,7 @@ class BeliefBase {
     //may be un-redundated when presented with new info
     private val beliefs: MutableSet<Belief> = mutableSetOf() //Only holds base beliefs. None of these have parents
     private val entails: MutableSet<Belief> = mutableSetOf()
+    private var numberOfEntailments = 0
     /**
      * Checks whether two beliefs contradict eachother
      */
@@ -231,12 +231,17 @@ class BeliefBase {
             }
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
         }
-        while()
-        redoEntailments()
+        /*
+        while(redoEntailments()){
+
+        }
+
+         */
+
         //println("justAnotherCoolFunction changed something?: " + justAnotherCoolFunction(newBelief))
         //print("justAnotherCoolFunction says: " + justAnotherCoolFunction(newBelief))
-        //println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
-        //justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction()
+        println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
+        justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction()
         printBeliefs()
     }
 
@@ -536,8 +541,9 @@ class BeliefBase {
                             val newDisjunctionString =
                                 "(${newVariables.map { literal -> literal.literalString }.joinToString("|") { it }})"
                             println("newstring is:" + newDisjunctionString)
-                            var newDisjunction: Disjunction = Disjunction(newDisjunctionStriva//l newBelief: Belief = Belief(newDisjunctionString)
-                            outerDisjunction.parent!!.parent.entailments.add(newBelief)
+                            var newBelief = Belief(newDisjunctionString)
+                            entails.add(newBelief)
+                            //outerDisjunction.parent!!.parent.entailments.add(newBelief)
                             //innerDisjunction.parent!!.parent.entailments.add(Belief(newString))
                             anythingChanged = true
                         }
