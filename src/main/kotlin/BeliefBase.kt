@@ -189,7 +189,7 @@ class BeliefBase {
 
     private fun determineEntailments(){
 
-
+        
         TODO() //This is where all the actual hard code goes
     }
 
@@ -339,4 +339,35 @@ class BeliefBase {
         modelWherePFalse.set(thirdP.varName, false)
         return DPLL(clauses, symbols, modelWherePTrue) || DPLL(clauses, symbols, modelWherePFalse)
     }
+
+    fun revise() {
+
+
+
+        for (outerbelief in beliefs) {
+            for (innerbelief in beliefs) {
+                if (innerbelief != outerbelief) {
+                    for (outerDisjunc in outerbelief.CNF.disjunctions){
+                        for (innerDisjunc in innerbelief.CNF.disjunctions){
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+    fun someOtherFunc(newBelief: Belief) {
+        for (belief in beliefs) {
+            belief.CNF.
+        }
+    }
+
 }

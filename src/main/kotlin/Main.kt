@@ -46,10 +46,13 @@ fun giveBelief(input: String, beliefBase: BeliefBase){
     val p = PropositionalParser(f)
     val formula = p.parse(input).cnf()
     println("Your input in CNF is: " + formula)
+    if(formula.toString().contains("true")){
+        println("Your input is a tautology, and is therefore ignored")
+        return
+    }
+    if(formula.toString().contains("false")){
+        println("Your input is a contradiction, and is therefore ignored")
+        return
+    }
     beliefBase.giveBeliefString(formula.toString())
-
-}
-
-fun toCNF2(){
-
 }
