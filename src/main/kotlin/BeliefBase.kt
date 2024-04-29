@@ -1,7 +1,7 @@
 import kotlin.system.exitProcess
 
 public val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
-public val RELEVANT_ORS = 3
+public val RELEVANT_ORS = 30
 
 public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
     val parent = parentCNF
@@ -177,7 +177,6 @@ class BeliefBase {
         beliefToAdd.addedNumber = numberOfBeliefs
         numberOfBeliefs++
         beliefs.add(beliefToAdd)
-        //redoEntailments()
     }
 
     private fun clearAllEntailments() {
@@ -198,10 +197,6 @@ class BeliefBase {
     private fun redoEntailments() {
         clearAllEntailments()
         revise()
-        //println("The number of entailments is: " + allEntailments.size)
-        //exitProcess(0)
-
-
     }
 
     /**
@@ -216,21 +211,9 @@ class BeliefBase {
 
         while (!DPLL_satisfiable()) {
             println("Model is not satisfiable. Removing belief to fix")
-            /*
-            println("Model is not satisfiable. Following beliefs are causing inconsistency, and one will be removed:")
-            for (belief in inconsistentBeliefs) {
-                println("\t" + belief.CNFString)
-            }*/
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
         }
-
         redoEntailments()
-
-
-        //println("justAnotherCoolFunction changed something?: " + justAnotherCoolFunction(newBelief))
-        //print("justAnotherCoolFunction says: " + justAnotherCoolFunction(newBelief))
-        //println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
-        //justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction()
         printBeliefs()
     }
 
@@ -397,8 +380,9 @@ class BeliefBase {
                 if (allLiterals.elementAt(i).isNot != allLiterals.elementAt(j).isNot &&
                     allLiterals.elementAt(i).varName == allLiterals.elementAt(j).varName
                 ) {
-                    //We do the wildest rawdogging of these strings
 
+
+                    //We do the wildest rawdogging of these strings
                     var stringPartOne = ""
                     for (literal in allLiterals.elementAt(i).parent.variables){
                         if(literal != allLiterals.elementAt(i)){
@@ -414,7 +398,7 @@ class BeliefBase {
                     }
 
                     stringPartOne.replace("(", "").replace(")", "")
-                    stringPartOne.replace("(", "").replace(")", "")
+                    stringPartTwo.replace("(", "").replace(")", "")
                     var newString = cropString(
                         stringPartOne + "|" + stringPartTwo
                     )
@@ -616,17 +600,26 @@ private fun cropString(inputt: String): String {
     return input.substring(1)
 }
 
-private fun cropString2(inputt: String): String {
-    // Regex to find the index of the first and last letter.
-    var input = inputt
-    val firstLetterIndex = input.indexOfFirst { it.isLetter() }
-    val lastLetterIndex = input.indexOfLast { it.isLetter() }
+fun removeDuplicatePatterns(input: String): String {
+    val seenChars = mutableSetOf<Char>()
+    val seenNegations = mutableSetOf<Char>()
+    val result = StringBuilder()
+    var i = 0
 
-    while(input.indexOfFirst { it.isLetter() } > input.indexOf('|') && input.indexOfFirst { it.isLetter() } > input.indexOf('&')){
-        input = input.drop(1)
+    while (i < input.length) {
+        if (input[i] == '~' && i + 1 < input.length){
+            if (!seenNegations.contains(input[i + 1])){
+                result.append(input[i]).append(input[i+1])
+                seenNegations.add(input[i+1])
+            }
+            i ++
+        } else if (!seenChars.contains(input[i])){
+            result.append(input[i])
+            seenChars.add(input[i])
+        }
+        i++
     }
-    while(input.indexOfLast { it.isLetter() } < input.lastIndexOf('|') && input.indexOfLast { it.isLetter() } < input.lastIndexOf('&')){
-        input = input.drop(1)
-    }
-    return input
+
+    return result.toString()
 }
+

@@ -3,6 +3,7 @@ import org.logicng.io.parsers.PropositionalParser
 
 
 fun main() {
+    //print(removeDuplicatePatterns("~abdg~aaa~bvv|d~ssds"))
     takeInput()
 }
 
@@ -14,17 +15,6 @@ fun takeInput(){
         val input = readLine()!!
         giveBelief(input,beliefBase)
     }
-}
-
-fun testMain(){
-    val beliefBase: BeliefBase = BeliefBase()
-    giveBelief("AND(IFF('k','b'),NOT('k'))", beliefBase)
-    /*
-    giveBelief("NOT('c')", beliefBase)
-    giveBelief("OR('a','b','c')", beliefBase)
-    giveBelief("NOT('a')", beliefBase)
-
-     */
 }
 
 fun giveBelief(input: String, beliefBase: BeliefBase){
