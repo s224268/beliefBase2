@@ -1,7 +1,7 @@
 import kotlin.system.exitProcess
 
 public val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
-public val RELEVANT_ORS = 10000
+public val RELEVANT_ORS = 3
 
 public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
     val parent = parentCNF
@@ -41,7 +41,6 @@ public class CNF(var CNFString: String, parentBelief: Belief) {
 
     init {
         try {
-
             val stringList = CNFString.split('&')
             for (disjunctionString in stringList) {
                 disjunctions.add(Disjunction(disjunctionString, this))
@@ -168,14 +167,9 @@ class BeliefBase {
         println("Antons entailments of these are:")
         for (belief in beliefs) {
             for (child in belief.entailments) {
-                if (printedBeliefs[child.CNFString] != true) println(child.CNFString)
+                if (printedBeliefs[child.CNFString] != true) println("\t" + child.CNFString)
                 printedBeliefs[child.CNFString] = true
             }
-        }
-
-        println("Lucas entailments:")
-        for (belief in allEntailments) {
-            println(belief.CNFString)
         }
     }
 
@@ -204,8 +198,8 @@ class BeliefBase {
     private fun redoEntailments() {
         clearAllEntailments()
         revise()
-        println("The number of entailments is: " + allEntailments.size)
-        exitProcess(0)
+        //println("The number of entailments is: " + allEntailments.size)
+        //exitProcess(0)
 
 
     }
