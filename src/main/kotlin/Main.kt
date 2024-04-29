@@ -3,7 +3,18 @@ import org.logicng.io.parsers.PropositionalParser
 
 
 fun main() {
-    //print(removeDuplicatePatterns("~abdg~aaa~bvv|d~ssds"))
+    println("Rules for beliefs: " +
+            "\n - Use single letter variables \n" +
+            "Use the following symbols:\n" +
+            " - NOT: ~\n" +
+            " - AND: &\n" +
+            " - OR: |\n" +
+            " - IFF: <=> \n" +
+            " - imp: => \n" +
+            " - Brackets: (), as you'd expect\n" +
+            "Press enter to continue")
+    readln()
+    clearTerminal()
     takeInput()
 }
 
@@ -11,7 +22,7 @@ fun takeInput() {
     val beliefBase: BeliefBase = BeliefBase()
     //TODO: Print grammar rules
     while (true) {
-        println("To contract an belief, write -r <belief>, where belief is the CNF exactly as printed.")
+        println("To contract a belief, write -r <belief>, where belief is the CNF exactly as printed.")
         println("Otherwise, state your belief:")
         val input = readLine()!!
         if (input[0] == '-') {
@@ -34,6 +45,11 @@ fun giveBelief(input: String, beliefBase: BeliefBase) {
         println("Your input is a contradiction, and is therefore ignored")
         return
     }
-
     beliefBase.giveBeliefString(formula.toString())
+}
+
+fun clearTerminal(){
+    for (i in 0..35){
+        println()
+    }
 }

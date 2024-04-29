@@ -151,6 +151,9 @@ class BeliefBase {
                 printedBeliefs[child.CNFString] = true
             }
         }
+        println()
+        println()
+        println()
     }
 
     private fun addBelief(beliefToAdd: Belief) {
