@@ -136,7 +136,7 @@ class BeliefBase {
 
         println("Current base beliefs are:")
         for (belief in beliefs) {
-            if (printedBeliefs[belief.CNFString] != true) println(belief.CNFString)
+            if (printedBeliefs[belief.CNFString] != true) println("\t" + belief.CNFString)
             printedBeliefs[belief.CNFString] = true
         }
         println("Entailments of these are:")

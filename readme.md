@@ -6,6 +6,8 @@
 4. Run the main function.
 5. Further instructions are shown in the program.
 
+Non-CNF forms of beliefs are not saved.
+
 Optional:
 For processing large statements and limiting useless entailments, you may want to go into src/main/kotlin/BeliefBase.kt
 and change the value of RELEVANT_ORS which is located in the very top of the document. This variable is also described in the report.
