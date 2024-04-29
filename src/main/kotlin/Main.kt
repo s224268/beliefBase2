@@ -13,20 +13,6 @@ fun takeInput(){
         println("State your belief:")
         val input = readLine()!!
         giveBelief(input,beliefBase)
-        /*
-        try{
-            val input = readLine()!!
-            giveBelief(input,beliefBase)
-        } catch (e: Exception ){
-            when(e){
-                is java.lang.StringIndexOutOfBoundsException -> println("An error was found in your input. Please check it and try again")
-                is java.lang.NullPointerException -> println("An error was found in your input. Please check it and try again")
-            }
-
-        }
-
-         */
-
     }
 }
 
