@@ -7,8 +7,6 @@ public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
 
     init {
         for (literalString in disjunctionString.split('|')) {
-            //println(literalString)
-            //println("or")
             variables.add(Literal(literalString, this))
         }
     }
@@ -16,7 +14,6 @@ public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
     fun evaluate(map: Map<String, Boolean?>): Boolean? {
         var falseVariableCounter = 0
         for (variable in variables) {
-            //return variable.evaluate(map)
             if (variable.evaluate(map) == true) {
                 return true
             } else if (variable.evaluate(map) == false) {
@@ -93,10 +90,6 @@ public fun getWorth(belief: Belief): Int {
     return belief.addedNumber
 }
 
-/**
- * Decides on which belief to remove.
- */
-
 
 public class Belief(originalExpression: String) {
     val CNFString = originalExpression
@@ -112,9 +105,6 @@ public class Belief(originalExpression: String) {
 
     val parents: MutableList<Belief> = mutableListOf() //The corresponding parents. Not sure if we want this
 
-    fun giveEntailment(newBelief: Belief){
-
-    }
 }
 
 /**
@@ -492,9 +482,7 @@ class BeliefBase {
                 }
             }
         }
-        /*for (belief in beliefs) {
-            justAnotherAnotherOtherOtherOtherCoolFunction(belief)
-        }*/
+
         return anythingChanged
     }
 
