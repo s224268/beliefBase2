@@ -128,16 +128,7 @@ class BeliefBase {
     //There is no reason to ever remove a belief unless we find its direct contradiction, since redundant information
     //may be un-redundated when presented with new info
     private val beliefs: MutableSet<Belief> = mutableSetOf() //Only holds base beliefs. None of these have parents
-    private val entails: MutableSet<Belief> = mutableSetOf()
-    private var numberOfEntailments = 0
-    /**
-     * Checks whether two beliefs contradict eachother
-     */
-    private fun contradicts(belief1: Belief): Boolean {
-        //https://sat.inesc-id.pt/~ines/cp07.pdf This for some advanced shit.
-        // Maybe we should just iterate over every combination first
-        return TODO()
-    }
+    private val entailments: MutableSet<Belief> = mutableSetOf() //
 
     private fun selectAndRemoveBelief(contradictingBeliefs: Set<Belief>, holyBelief: Belief) {
 
@@ -160,23 +151,23 @@ class BeliefBase {
 
     private fun printBeliefs() {
 
-        val printedBeliefs: MutableMap<Belief, Boolean> = mutableMapOf()
+        val printedBeliefs: MutableMap<String, Boolean> = mutableMapOf()
 
         println("Current base beliefs are:")
         for (belief in beliefs) {
-            if (printedBeliefs[belief] != true) println(belief.CNFString)
-            printedBeliefs[belief] = true
+            if (printedBeliefs[belief.CNFString] != true) println(belief.CNFString)
+            printedBeliefs[belief.CNFString] = true
         }
         println("Antons entailments of these are:")
         for (belief in beliefs) {
             for (child in belief.entailments) {
-                if (printedBeliefs[child] != true) println(child.CNFString)
-                printedBeliefs[child] = true
+                if (printedBeliefs[child.CNFString] != true) println(child.CNFString)
+                printedBeliefs[child.CNFString] = true
             }
         }
 
         println("Lucas entailments:")
-        for (belief in entails) {
+        for (belief in entailments) {
             println(belief.CNFString)
         }
     }
@@ -203,15 +194,11 @@ class BeliefBase {
      * If we know that (A||B) and !A, then B is a child of both (A||B) and !A
      * My intuition is to clear every entailment and start over, but we can discuss this.
      */
-    private fun redoEntailments():Boolean {
+    private fun redoEntailments() {
         clearAllEntailments()
-        return revise()
-    }
-
-    private fun determineEntailments() {
+        revise()
 
 
-        TODO() //This is where all the actual hard code goes
     }
 
     /**
@@ -225,23 +212,22 @@ class BeliefBase {
         addBelief(newBelief)
 
         while (!DPLL_satisfiable()) {
+            println("Model is not satisfiable. Removing belief to fix")
+            /*
             println("Model is not satisfiable. Following beliefs are causing inconsistency, and one will be removed:")
             for (belief in inconsistentBeliefs) {
                 println("\t" + belief.CNFString)
-            }
+            }*/
             selectAndRemoveBelief(inconsistentBeliefs, newBelief)
         }
-        /*
-        while(redoEntailments()){
 
-        }
+        redoEntailments()
 
-         */
 
         //println("justAnotherCoolFunction changed something?: " + justAnotherCoolFunction(newBelief))
         //print("justAnotherCoolFunction says: " + justAnotherCoolFunction(newBelief))
-        println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
-        justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction()
+        //println("justAnotherCoolFunction changed something?: " + justAnotherAnotherOtherCoolFunction(newBelief)) // NEW
+        //justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction()
         printBeliefs()
     }
 
@@ -410,15 +396,7 @@ class BeliefBase {
                             stringPartOne = cropString(stringPartOne + "|" +  literal.literalString)
                         }
                     }
-                    println("Stringpartone:" + stringPartOne)
-                    /*
-                    val stringPartOne =cropString2(
-                        allLiterals[i].parent.disjunctionString.replace(
-                            allLiterals[i].literalString,
-                            ""
-                        )
-                    )
-                     */
+                    //println("Stringpartone:" + stringPartOne)
 
                     var stringPartTwo = ""
                     for (literal in allLiterals[j].parent.variables){
@@ -426,26 +404,47 @@ class BeliefBase {
                             stringPartTwo = cropString(stringPartTwo + "|" + literal.literalString)
                         }
                     }
-                    println("Stringparttwo" + stringPartTwo)
-                    /*
-                    val stringPartTwo = cropString2(
-                        allLiterals[j].parent.disjunctionString.replace(
-                            allLiterals[j].literalString,
-                            ""
-                        )
-                    )
+                    //println("Stringparttwo" + stringPartTwo)
 
-                     */
                     var newString = cropString(
                         "(" + stringPartOne + ")" + "|" + "(" + stringPartTwo + ")"
                     )
 
-                    println("newstring is:" + newString)
+                    //println("newstring is:" + newString)
+                    //newString = newString.replace(" ", "")
+                    /*
+                    //Whacky way to parse string right here
+                    val f = FormulaFactory()
+                    val p = PropositionalParser(f)
+                    val formula = p.parse(newString).cnf()
+                     */
+                    newString = newString.replace(" ", "")
+
                     val newBelief = Belief(newString)
 
-                    allLiterals[i].parent.parent!!.parent.entailments.add(newBelief)
-                    allLiterals[j].parent.parent!!.parent.entailments.add(newBelief)
-                    return true
+                    val allRelevant: MutableSet<String> = mutableSetOf()
+                    for (belief in allLiterals[i].parent.parent!!.parent.entailments){
+                        allRelevant.add(belief.CNFString)
+                    }
+                    for (belief in allLiterals[j].parent.parent!!.parent.entailments){
+                        allRelevant.add(belief.CNFString)
+                    }
+
+                    if (!allRelevant.contains(newBelief.CNFString)){
+                        var New = true
+                        for (belief in entailments){
+                            if (belief.CNFString == newBelief.CNFString){
+                                New = false
+                                break
+                            }
+                        }
+                        //We still add here, because it might be new parents. Who cares, its just time
+                        allLiterals[i].parent.parent!!.parent.entailments.add(newBelief)
+                        allLiterals[j].parent.parent!!.parent.entailments.add(newBelief)
+                        if(New) revise()
+                    }
+
+
                 }
             }
         }
@@ -542,7 +541,7 @@ class BeliefBase {
                                 "(${newVariables.map { literal -> literal.literalString }.joinToString("|") { it }})"
                             println("newstring is:" + newDisjunctionString)
                             var newBelief = Belief(newDisjunctionString)
-                            entails.add(newBelief)
+                            entailments.add(newBelief)
                             //outerDisjunction.parent!!.parent.entailments.add(newBelief)
                             //innerDisjunction.parent!!.parent.entailments.add(Belief(newString))
                             anythingChanged = true
@@ -584,9 +583,9 @@ class BeliefBase {
 
     fun justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction(): Boolean {
         var anythingChanged = false
-        for (outerBelieve in entails) {
+        for (outerBelieve in entailments) {
             for (outerDisjunction in outerBelieve.CNF.disjunctions) {
-                for (belief in entails) {
+                for (belief in entailments) {
                     for (innerDisjunction in belief.CNF.disjunctions) {
                         val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
                             outerDisjunction.variables.any { outerVariable ->
