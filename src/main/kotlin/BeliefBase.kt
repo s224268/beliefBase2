@@ -1,5 +1,3 @@
-import kotlin.system.exitProcess
-
 public val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
 public val RELEVANT_ORS = 2
 
@@ -156,7 +154,7 @@ class BeliefBase {
             if (printedBeliefs[belief.CNFString] != true) println(belief.CNFString)
             printedBeliefs[belief.CNFString] = true
         }
-        println("Antons entailments of these are:")
+        println("Entailments of these are:")
         for (belief in beliefs) {
             for (child in belief.entailments) {
                 if (printedBeliefs[child.CNFString] != true) println("\t" + child.CNFString)
@@ -550,6 +548,21 @@ class BeliefBase {
         return anythingChanged
     }
 
+    fun contractBelief(stringToRemove: String): Boolean {
+        var beliefToRemove : Belief? = null
+        for (belief in beliefs){
+            if (belief.CNFString == stringToRemove){
+                beliefToRemove = belief //We avoid a ConcurrentModificationException
+            }
+        }
+        if (beliefToRemove != null){
+            beliefs.remove(beliefToRemove)
+            redoEntailments()
+            printBeliefs()
+            return true
+        }
+        return false
+    }
 }
 
 private fun cropString(inputt: String): String {
