@@ -125,14 +125,6 @@ public class Belief(originalExpression: String) {
 class BeliefBase {
     private var numberOfBeliefs: Int = 0 //Keeps track of total number of beliefs that have been added. Works as a "timestamp"
 
-    //I think every base belief should be added to this, but not entailments. E.G if we know that (A||B) and !B,
-    //then (A||B), !B are added, but A is added as a child of (A||B) AND !B. Then, if we later get told that B,
-    //it will easy to remove A from all its parents (which is why we store the parents).
-    //My current idea is to essentially delete all children and then redo entailment calculations. Slower, but simpler.
-    //
-    // TODO: Discuss all this or make a decision
-    //There is no reason to ever remove a belief unless we find its direct contradiction, since redundant information
-    //may be un-redundated when presented with new info
     private val beliefs: MutableSet<Belief> = mutableSetOf() //Only holds base beliefs. None of these have parents
     private val allEntailments: MutableSet<Belief> = mutableSetOf() //
 
