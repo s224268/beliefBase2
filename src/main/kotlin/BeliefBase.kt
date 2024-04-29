@@ -1,7 +1,7 @@
-public val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
-public val RELEVANT_ORS = 2
+val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
+const val RELEVANT_ORS = 5
 
-public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
+class Disjunction(disjunctionString: String, parentCNF: CNF?) {
     val parent = parentCNF
     val variables: MutableList<Literal> = mutableListOf()
 
@@ -30,7 +30,7 @@ public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
 /**
  * This is a conjunction
  */
-public class CNF(var CNFString: String, parentBelief: Belief) {
+public class CNF(CNFString: String, parentBelief: Belief) {
     val parent = parentBelief
     val disjunctions: MutableList<Disjunction> = mutableListOf()
 
@@ -48,8 +48,7 @@ public class CNF(var CNFString: String, parentBelief: Belief) {
 
     fun evaluate(map: Map<String, Boolean?>): Boolean? {
         for (disjunction in disjunctions) {
-            val result = disjunction.evaluate(map)
-            if (result == null) return null
+            disjunction.evaluate(map) ?: return null //Return null if null
             if (!disjunction.evaluate(map)!!) {
                 return false
             }
@@ -58,7 +57,7 @@ public class CNF(var CNFString: String, parentBelief: Belief) {
     }
 }
 
-public class Literal(val literalString: String, parentDisjunction: Disjunction) {
+class Literal(val literalString: String, parentDisjunction: Disjunction) {
     val parent = parentDisjunction
     var varName: String = ""
     var isNot: Boolean = false
@@ -83,21 +82,21 @@ public class Literal(val literalString: String, parentDisjunction: Disjunction) 
 }
 
 /**
- * This function is basically confirmation basis, algorithmically
+ * This function is basically different forms confirmation basis, algorithmically
  */
-public fun getWorth(belief: Belief): Int {
+fun getWorth(belief: Belief): Int {
     //TODO: We should ideally determine this based on number of entailments, but this works for now
     return belief.addedNumber
 }
 
 
-public class Belief(originalExpression: String) {
+class Belief(originalExpression: String) {
     val CNFString = originalExpression
     var CNF: CNF = CNF(originalExpression, this)
 
     //addedNumber Is used to order the beliefs. Maybe we should just use a sorted list instead.
     //This is mainly for if we just remove the oldest belief first, which is dubious, but at the same time
-    //we automatically assume that newer beliefs are true so it follows that older beliefs are less true
+    //we automatically assume that newer beliefs are true, so it follows that older beliefs are less true
     var addedNumber: Int = 0
 
     //All beliefs that directly follow from this belief. This is the "Children"
@@ -114,22 +113,18 @@ class BeliefBase {
     private var numberOfBeliefs: Int = 0 //Keeps track of total number of beliefs that have been added. Works as a "timestamp"
 
     private val beliefs: MutableSet<Belief> = mutableSetOf() //Only holds base beliefs. None of these have parents
-    private val allEntailments: MutableSet<Belief> = mutableSetOf() //
-
+    private val allEntailments: MutableSet<Belief> = mutableSetOf() //Temporary store of entailments. They are also children of the base beliefs
+    private val allEntailmentStrings: MutableSet<String> = mutableSetOf()
     private fun selectAndRemoveBelief(contradictingBeliefs: Set<Belief>, holyBelief: Belief) {
-
-        //TODO The following is based on number of entailments/children.
-        // We could, alternatively, just order them based on addedNumber if this is impractical
 
         if (contradictingBeliefs.size == 1 && contradictingBeliefs.first() == holyBelief) {
             println("Your belief is an oxymoron (Contradiction). It will not be added to the belief base")
             beliefs.remove(holyBelief)
             return
         }
-
         val beliefsToNumbers: MutableMap<Belief, Int> = mutableMapOf() //Rename this?
         for (belief in contradictingBeliefs) {
-            beliefsToNumbers.put(key = belief, value = getWorth(belief))
+            beliefsToNumbers[belief] = getWorth(belief)
         }
         beliefsToNumbers.remove(holyBelief) //We remove the holy belief, because we don't want it removed from the set of all beliefs
         beliefs.remove(beliefsToNumbers.minBy { it.value }.key) //Lowest val
@@ -181,7 +176,7 @@ class BeliefBase {
     /**
      * The "main" method for adding a belief
      */
-    public fun giveBeliefString(newBeliefString: String) {
+    fun giveBeliefString(newBeliefString: String) {
         giveBelief(Belief(newBeliefString))
     }
 
@@ -217,8 +212,8 @@ class BeliefBase {
     }
 
     private fun DPLL_satisfiable(): Boolean {
-        val clauses: MutableSet<Disjunction> = mutableSetOf<Disjunction>()
-        val literals: MutableSet<Literal> = mutableSetOf<Literal>()
+        val clauses: MutableSet<Disjunction> = mutableSetOf()
+        val literals: MutableSet<Literal> = mutableSetOf()
         val model: MutableMap<String, Boolean?> = mutableMapOf()
 
         for (belief in beliefs) {
@@ -226,13 +221,12 @@ class BeliefBase {
         }
 
         for (belief in beliefs) {
-            for (disjunc in belief.CNF.disjunctions) {
-                for (literal in disjunc.variables) {
+            for (disjunction in belief.CNF.disjunctions) {
+                for (literal in disjunction.variables) {
                     literals.add(literal)
                 }
             }
         }
-
         inconsistentBeliefs.clear()
         return DPLL(clauses, literals, model)
     }
@@ -242,9 +236,8 @@ class BeliefBase {
         symbols: MutableSet<Literal>,
         model: MutableMap<String, Boolean?>
     ): Boolean {
-        //println("Testing with model " + model)
-        //If every clause in clauses is true in model then return true
 
+        //If every clause in clauses is true in model then return true
         if (allClausesTrue(clauses, model)) {
             return true
         }
@@ -256,11 +249,10 @@ class BeliefBase {
 
         // iterate over strings in model. If any string is only presented one time, safely set it to true and check the model
         //P, value = FINDPURESYMBOL(symbol, clauses, model)
-
         var pureLiteral: Literal? = null
         for (literal in symbols) {
             var pure: Boolean = true
-            var symbolsOfLiteral: List<Literal> =
+            val symbolsOfLiteral: List<Literal> =
                 symbols.filter { sym -> sym.varName == literal.varName }
             for (innerLiteral in symbolsOfLiteral) {
                 if (innerLiteral.isNot != literal.isNot) {
@@ -272,8 +264,8 @@ class BeliefBase {
                 pureLiteral = literal
             }
         }
-
-        if (pureLiteral != null && model[pureLiteral.varName] == null) { //If P != null return DPLL(clauses, symbols - P, model where P = value)
+        //If P != null return DPLL(clauses, symbols - P, model where P = value)
+        if (pureLiteral != null && model[pureLiteral.varName] == null) {
 
             model[pureLiteral.varName] = !pureLiteral.isNot
             symbols.remove(pureLiteral)
@@ -307,23 +299,20 @@ class BeliefBase {
         }
 
 
-        //P = FIRST(Symbols) [pick any?]
+        //P = FIRST(Symbols)
         //Rest = REST(symbols)
-        var thirdP: Literal
-        thirdP = symbols.first()
+        val thirdP: Literal = symbols.first()
         symbols.remove(thirdP)
 
         val modelWherePTrue = model.toMutableMap()
         val modelWherePFalse = model.toMutableMap()
-        modelWherePTrue.set(thirdP.varName, true)
-        modelWherePFalse.set(thirdP.varName, false)
+        modelWherePTrue[thirdP.varName] = true
+        modelWherePFalse[thirdP.varName] = false
         return DPLL(clauses, symbols, modelWherePTrue) || DPLL(clauses, symbols, modelWherePFalse)
     }
 
-    val allEntailmentStrings: MutableSet<String> = mutableSetOf()
 
-
-    fun revise(): Boolean {
+    private fun revise(): Boolean {
         val allLiterals: MutableSet<Literal> = mutableSetOf()
         allLiterals.clear()
         for (belief in beliefs) {
@@ -352,7 +341,7 @@ class BeliefBase {
                     allLiterals.elementAt(i).varName == allLiterals.elementAt(j).varName
                 ) {
 
-                    //Some wild string concanation that CNF allows us to use
+                    //Some wild string concatenation that CNF allows us to use
                     var stringPartOne = ""
                     for (literal in allLiterals.elementAt(i).parent.variables){
                         if(literal != allLiterals.elementAt(i)){
@@ -370,7 +359,7 @@ class BeliefBase {
                     stringPartOne.replace("(", "").replace(")", "")
                     stringPartTwo.replace("(", "").replace(")", "")
                     var newString = cropString(
-                        stringPartOne + "|" + stringPartTwo
+                        "$stringPartOne|$stringPartTwo"
                     )
                     newString = newString.replace(" ", "") //removes spaces
 
@@ -389,19 +378,18 @@ class BeliefBase {
                     }
 
                     if (!allRelevant.contains(newBelief.CNFString)){
-                        var New = true
+                        var new = true
                         for (belief in allEntailments){
                             if (belief.CNFString == newBelief.CNFString){
-                                New = false
+                                new = false
                                 break
                             }
                         }
-                        //We still add here, because it might be new parents. Who cares, its just time
 
                         allEntailments.add(newBelief)
                         allLiterals.elementAt(i).parent.parent!!.parent.entailments.add(newBelief)
                         allLiterals.elementAt(j).parent.parent!!.parent.entailments.add(newBelief)
-                        if(New) revise()
+                        if(new) revise()
                     }
 
 
@@ -556,20 +544,20 @@ class BeliefBase {
     }
 }
 
-private fun cropString(inputt: String): String {
-    var input = " " + inputt
+private fun cropString(input: String): String {
+    var newString = " $input"
     // Regex to find the index of the first and last letter.
-    val firstLetterIndex = input.indexOfFirst { it.isLetter() }
-    val lastLetterIndex = input.indexOfLast { it.isLetter() }
+    val firstLetterIndex = newString.indexOfFirst { it.isLetter() }
+    val lastLetterIndex = newString.indexOfLast { it.isLetter() }
 
     if (firstLetterIndex == -1 || lastLetterIndex == -1) {
         // No letters found, return an empty string or the original string based on requirement.
         return ""
     }
 
-    input = input.substring(firstLetterIndex-1,lastLetterIndex+1)
-    if (input[0] == '~'){
-        return input
+    newString = newString.substring(firstLetterIndex-1,lastLetterIndex+1)
+    if (newString[0] == '~'){
+        return newString
     }
-    return input.substring(1)
+    return newString.substring(1)
 }
