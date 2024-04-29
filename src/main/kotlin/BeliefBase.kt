@@ -190,11 +190,6 @@ class BeliefBase {
         }
     }
 
-    /**
-     * Since we have added a new belief, we need to determine whether there are any new entailments.
-     * If we know that (A||B) and !A, then B is a child of both (A||B) and !A
-     * My intuition is to clear every entailment and start over, but we can discuss this.
-     */
     private fun redoEntailments() {
         clearAllEntailments()
         revise()
@@ -229,7 +224,6 @@ class BeliefBase {
     }
 
     private fun someClauseFalse(clauses: Set<Disjunction>, model: Map<String, Boolean?>): Boolean {
-        //k is set to true when it shouldnt for AND(OR('d',OR('a',IMP(OR('g',IMP(NOT('h'),'g')),OR('g')),IMP(IFF('a','d'),IFF('g','h'))),OR('e','k','g'),'g'),OR('a',AND(IFF('c','c'),'k','b',AND('d',NOT(NOT(NOT('d'))))),IMP('h',OR('k',NOT('c')))),NOT('k'))
         for (clause in clauses) {
             if (clause.evaluate(model) == false) {
                 inconsistentBeliefs.add(clause.parent!!.parent)
@@ -294,11 +288,10 @@ class BeliefBase {
             if (pure) {
                 pureLiteral = literal
             }
-        } //Doesn't cause an issue with AND(OR('d',OR('a',IMP(OR('g',IMP(NOT('h'),'g')),OR('g')),IMP(IFF('a','d'),IFF('g','h'))),OR('e','k','g'),'g'),OR('a',AND(IFF('c','c'),'k','b',AND('d',NOT(NOT(NOT('d'))))),IMP('h',OR('k',NOT('c')))),NOT('k'))
+        }
 
         if (pureLiteral != null && model[pureLiteral.varName] == null) { //If P != null return DPLL(clauses, symbols - P, model where P = value)
 
-            //I think there is an issue here where k is set to false and then true for AND(IFF('k','b'),NOT('k'))
             model[pureLiteral.varName] = !pureLiteral.isNot
             symbols.remove(pureLiteral)
             return DPLL(clauses, symbols, model)
@@ -336,12 +329,6 @@ class BeliefBase {
         var thirdP: Literal
         thirdP = symbols.first()
         symbols.remove(thirdP)
-        /*
-        do{
-            thirdP = symbols.first()
-            symbols.remove(thirdP)
-        }while(model[thirdP.varName] != null)
-        */
 
         val modelWherePTrue = model.toMutableMap()
         val modelWherePFalse = model.toMutableMap()
