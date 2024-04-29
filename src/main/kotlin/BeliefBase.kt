@@ -85,7 +85,6 @@ class Literal(val literalString: String, parentDisjunction: Disjunction) {
  * This function is basically different forms confirmation basis, algorithmically
  */
 fun getWorth(belief: Belief): Int {
-    //TODO: We should ideally determine this based on number of entailments, but this works for now
     return belief.addedNumber
 }
 
@@ -298,9 +297,7 @@ class BeliefBase {
             }
         }
 
-
-        //P = FIRST(Symbols)
-        //Rest = REST(symbols)
+        //We set the first unassigned literal to either true or false and run the function recursively
         val thirdP: Literal = symbols.first()
         symbols.remove(thirdP)
 
@@ -311,17 +308,18 @@ class BeliefBase {
         return DPLL(clauses, symbols, modelWherePTrue) || DPLL(clauses, symbols, modelWherePFalse)
     }
 
-
+    //The function that revises the beliefs and adds entailments
     private fun revise(): Boolean {
         val allLiterals: MutableSet<Literal> = mutableSetOf()
         allLiterals.clear()
+        //Add all literals to set
         for (belief in beliefs) {
             for (disjunction in belief.CNF.disjunctions) {
                 allLiterals.addAll(disjunction.variables)
             }
         }
 
-
+        //add all entailments' literals to the set as well
         val visitedBeliefs: MutableMap<Belief, Boolean> = mutableMapOf()
         for (belief in beliefs) {
             for (child in belief.entailments) {
@@ -342,6 +340,7 @@ class BeliefBase {
                 ) {
 
                     //Some wild string concatenation that CNF allows us to use
+                    //We basically make new beliefs as entailments based on the current beliefs
                     var stringPartOne = ""
                     for (literal in allLiterals.elementAt(i).parent.variables){
                         if(literal != allLiterals.elementAt(i)){
@@ -377,6 +376,7 @@ class BeliefBase {
                         allRelevant.add(entailment.CNFString)
                     }
 
+                    //if a new belief is found it is added to the entailment
                     if (!allRelevant.contains(newBelief.CNFString)){
                         var new = true
                         for (belief in allEntailments){
@@ -399,139 +399,13 @@ class BeliefBase {
         return false
     }
 
-
-
-    // negate belief
-    // loop through all disjunctions in the new belief
-    // then do an inner loop for all disjunctions in current belief base
-
-    // if a variable name in the disjunction (from the new belief) is
-    // present in a disjunction (from the current belief base), then smack it down
-    // to one clause, by removing the variable from the clause, and exchange it
-    // for the other variable in the disjunction (from the new belief)
-
-    // aka.
-    // current negated disjunction in the outer loop is: (P V Q)
-    // current disjunction in the inner loop is: (-P V R)
-    // they together hold -P and P
-    // Remove (-P V R) from the belief base, and replace it with one clause
-    // that just contains the remains of the two clauses, aka. (Q V R)
-    // keep doing this.
-    // If any clause is at any time empty, there is a contradiction.
-    // // If we can not get an empty clause, then the new belief is not entailed
-    // by the belief base. although, it might still be true,
-    // but we are uncertain if it is due to the belief base.
-
-    fun justAnotherCoolFunction(newBelief: Belief): Boolean {
-        var anythingChanged = false
-        for (outerDisjunction in newBelief.CNF.disjunctions) {
-            outerDisjunction.variables
-            for (belief in beliefs) {
-                for (innerDisjunction in belief.CNF.disjunctions) {
-                    val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
-                        outerDisjunction.variables.any { outerVariable ->
-                            innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
-                        }
-                    }
-                    if (variablesToRemove.isNotEmpty()) {
-                        innerDisjunction.variables.removeAll(variablesToRemove)
-                        if (innerDisjunction.variables.isEmpty()) {
-                            belief.CNF.disjunctions.remove(innerDisjunction)
-                        }
-                        anythingChanged = true
-                    }
-                }
-            }
-        }
-        return anythingChanged
-    }
-
-    fun justAnotherAnotherOtherCoolFunction(newBelief: Belief): Boolean {
-        var anythingChanged = false
-        for (outerDisjunction in newBelief.CNF.disjunctions) {
-            for (belief in beliefs) {
-                for (innerDisjunction in belief.CNF.disjunctions) {
-                    val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
-                        outerDisjunction.variables.any { outerVariable ->
-                            innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
-                        }
-                    }
-
-                    if (variablesToRemove.isNotEmpty()) {
-                        val newVariables = innerDisjunction.variables.filterNot { it in variablesToRemove }
-                        if (newVariables.isNotEmpty()) {
-                            val newDisjunctionString =
-                                "(${newVariables.map { literal -> literal.literalString }.joinToString("|") { it }})"
-                            println("newstring is:" + newDisjunctionString)
-                            var newBelief = Belief(newDisjunctionString)
-                            allEntailments.add(newBelief)
-                            //outerDisjunction.parent!!.parent.entailments.add(newBelief)
-                            //innerDisjunction.parent!!.parent.entailments.add(Belief(newString))
-                            anythingChanged = true
-                        }
-                    }
-                }
-            }
-        }
-
-        return anythingChanged
-    }
-
-    private fun justAnotherAnotherOtherOtherOtherCoolFunction(newEntailment: Belief): Boolean {
-        var anythingChanged = false
-        for (outerBelief in beliefs.flatMap { it.entailments }) {
-            for (outerDisjunction in outerBelief.entailments.flatMap { entailment -> entailment.CNF.disjunctions }) {
-                for (belief in beliefs.flatMap { it.entailments }) {
-                    for (innerDisjunction in belief.CNF.disjunctions) {
-                        val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
-                            outerDisjunction.variables.any { outerVariable ->
-                                innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
-                            }
-                        }
-                        if (variablesToRemove.isNotEmpty()) {
-                            innerDisjunction.variables.removeAll(variablesToRemove)
-                            if (innerDisjunction.variables.isEmpty()) {
-                                belief.CNF.disjunctions.remove(innerDisjunction)
-                            }
-                            anythingChanged = true
-                        }
-                    }
-                }
-            }
-        }
-        return anythingChanged
-    }
-
-    fun justAnotherOtherWorkingPleaseMamaCoolIKilledAManFunction(): Boolean {
-        var anythingChanged = false
-        for (outerBelieve in allEntailments) {
-            for (outerDisjunction in outerBelieve.CNF.disjunctions) {
-                for (belief in allEntailments) {
-                    for (innerDisjunction in belief.CNF.disjunctions) {
-                        val variablesToRemove = innerDisjunction.variables.filter { innerVariable ->
-                            outerDisjunction.variables.any { outerVariable ->
-                                innerVariable.varName == outerVariable.varName && innerVariable.isNot != outerVariable.isNot
-                            }
-                        }
-                        if (variablesToRemove.isNotEmpty()) {
-                            innerDisjunction.variables.removeAll(variablesToRemove)
-                            if (innerDisjunction.variables.isEmpty()) {
-                                belief.CNF.disjunctions.remove(innerDisjunction)
-                            }
-                            anythingChanged = true
-                        }
-                    }
-                }
-            }
-        }
-        return anythingChanged
-    }
-
+    //Takes a string that needs to be removed and redos the entailments
     fun contractBelief(stringToRemove: String): Boolean {
         var beliefToRemove : Belief? = null
         for (belief in beliefs){
             if (belief.CNFString == stringToRemove){
-                beliefToRemove = belief //We avoid a ConcurrentModificationException
+                //We avoid a ConcurrentModificationException
+                beliefToRemove = belief
             }
         }
         if (beliefToRemove != null){

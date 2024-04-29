@@ -18,9 +18,9 @@ fun main() {
     takeInput()
 }
 
+
 fun takeInput() {
     val beliefBase: BeliefBase = BeliefBase()
-    //TODO: Print grammar rules
     while (true) {
         println("To contract a belief, write -r <belief>, where belief is the CNF exactly as printed.")
         println("Otherwise, state your belief:")
@@ -32,6 +32,7 @@ fun takeInput() {
     }
 }
 
+//Takes the input as a string and converts it to CNF before adding it to the BeliefBase
 fun giveBelief(input: String, beliefBase: BeliefBase) {
     val f = FormulaFactory()
     val p = PropositionalParser(f)
