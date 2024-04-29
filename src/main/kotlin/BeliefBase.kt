@@ -1,7 +1,7 @@
 import kotlin.system.exitProcess
 
 public val inconsistentBeliefs: MutableSet<Belief> = mutableSetOf()
-public val RELEVANT_ORS = 30
+public val RELEVANT_ORS = 2
 
 public class Disjunction(val disjunctionString: String, parentCNF: CNF?) {
     val parent = parentCNF
@@ -181,6 +181,7 @@ class BeliefBase {
 
     private fun clearAllEntailments() {
         //Hugely inefficient, but I don't see the issue. Simpler than going through every child and determining if it's still true
+        allEntailmentStrings.clear()
         for (belief in beliefs) {
             belief.entailments.clear()
             if (belief.parents.isNotEmpty()) {
@@ -349,6 +350,8 @@ class BeliefBase {
         return DPLL(clauses, symbols, modelWherePTrue) || DPLL(clauses, symbols, modelWherePFalse)
     }
 
+    val allEntailmentStrings: MutableSet<String> = mutableSetOf()
+
 
     fun revise(): Boolean {
         val allLiterals: MutableSet<Literal> = mutableSetOf()
@@ -371,18 +374,15 @@ class BeliefBase {
                 }
             }
         }
-        //println(beliefs.first().entailments.distinct().size)
 
 
         for (i in 0 until allLiterals.size - 1) {
             for (j in i + 1 until allLiterals.size) {
-                //println(i.toString() + " " + j.toString())
                 if (allLiterals.elementAt(i).isNot != allLiterals.elementAt(j).isNot &&
                     allLiterals.elementAt(i).varName == allLiterals.elementAt(j).varName
                 ) {
 
-
-                    //We do the wildest rawdogging of these strings
+                    //Some wild string concanation that CNF allows us to use
                     var stringPartOne = ""
                     for (literal in allLiterals.elementAt(i).parent.variables){
                         if(literal != allLiterals.elementAt(i)){
@@ -402,12 +402,14 @@ class BeliefBase {
                     var newString = cropString(
                         stringPartOne + "|" + stringPartTwo
                     )
-                    newString = newString.replace(" ", "")
+                    newString = newString.replace(" ", "") //removes spaces
 
-                    //Breaks to avoid horrid running times
+                    if(allEntailmentStrings.contains(newString)) break
                     if(newString.count { it == '|' } > RELEVANT_ORS){
                         break
                     }
+                    allEntailmentStrings.add(newString)
+
 
                     val newBelief = Belief(newString)
                     val allRelevant: MutableSet<String> = mutableSetOf()
@@ -571,17 +573,6 @@ class BeliefBase {
 
 }
 
-
-
-// ------------------
-// I belief base er der
-// A | B
-
-// ny belief siger notB
-// Så, B og notB går ud, og kun A står tilbage
-// funktionen returnerer at der er lavet en ændring.
-
-
 private fun cropString(inputt: String): String {
     var input = " " + inputt
     // Regex to find the index of the first and last letter.
@@ -599,27 +590,3 @@ private fun cropString(inputt: String): String {
     }
     return input.substring(1)
 }
-
-fun removeDuplicatePatterns(input: String): String {
-    val seenChars = mutableSetOf<Char>()
-    val seenNegations = mutableSetOf<Char>()
-    val result = StringBuilder()
-    var i = 0
-
-    while (i < input.length) {
-        if (input[i] == '~' && i + 1 < input.length){
-            if (!seenNegations.contains(input[i + 1])){
-                result.append(input[i]).append(input[i+1])
-                seenNegations.add(input[i+1])
-            }
-            i ++
-        } else if (!seenChars.contains(input[i])){
-            result.append(input[i])
-            seenChars.add(input[i])
-        }
-        i++
-    }
-
-    return result.toString()
-}
-
